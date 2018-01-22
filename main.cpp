@@ -25,10 +25,8 @@ GLuint textures[7], cubeMapTexture;
 Clipmap clipmap0, clipmap1, clipmap2, clipmap3, clipmap4, clipmap5, clipmap6, clipmap7, clipmap8;
 
 /* Projection transformation parameters */
-GLfloat fovy = 45.0;										// Field-of-view in Y direction angle (in degrees)
 GLfloat aspect = (GLfloat)WIDTH / (GLfloat)HEIGHT;			// Viewport aspect ratio
-GLfloat zNear = 0.001, zFar = 100.0;
-GLfloat angle = 0.0;										// rotation angle in degrees
+GLfloat zNear = 0.01, zFar = 100.0;
 
 /* Camera */
 Camera camera;
@@ -36,11 +34,13 @@ Camera camera;
 int a = N_COORD * N_COORD * N_TRIANG * 2 * N_TRIANG;		// 3 * 3 * 32 * 2 * 32;
 int b =  2 *N_COORD  * N_TRIANG * 2 * N_TRIANG;
 
+/* Flag */
+int flagTypeView = 0;
+
 void init() 
 {
 	/* Clear window */
 	glEnable(GL_DEPTH_TEST);
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);			// 0.529f, 0.807f, 0.92f, 0.0f
 
 	/* Init Shaders */
 	cubeShader = new Shader("shaders/cube_vshader.glsl", "shaders/cube_fshader.glsl");
@@ -120,16 +120,16 @@ void init()
 
 	glGenBuffers(1, &cubeBuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, cubeBuffer);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices)+sizeof(cubeNormals), NULL, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices) + sizeof(cubeNormals), NULL, GL_STATIC_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(cubeVertices), cubeVertices);
 	glBufferSubData(GL_ARRAY_BUFFER, sizeof(cubeVertices), sizeof(cubeNormals), cubeNormals);
 
 	/* Load an image and apply Textures */
-	loadTexture(0, textures, "textures/suelo_1.bmp");
+	loadTexture(0, textures, "textures/mountain_3.bmp");
 	loadTexture(1, textures, "textures/lake_4.bmp");
 	loadTexture(2, textures, "textures/garden_4.bmp");		// -
 	loadTexture(3, textures, "textures/garden_3.bmp");		// -
-	loadTexture(4, textures, "textures/mountain_3.bmp");	// -
+	loadTexture(4, textures, "textures/suelo_1.bmp");		// -
 	loadTexture(5, textures, "textures/snow_3.bmp");		// -
 	loadTexture(6, textures, "textures/snow_4.bmp");		// -
 
@@ -160,15 +160,12 @@ void drawBackgrounds(Shader* &shader, GLuint& buffer, GLuint& program, int& num_
 	/* Vertex Shader */
 	mat4 view, projection, model;
 	//view = camera.GetViewMatrix();
-	view = LookAt(camera.position, camera.front, camera.up) * view;
-	projection = Perspective(fovy, (GLfloat)WIDTH / (GLfloat)HEIGHT, zNear, zFar);
+	view = LookAt(camera.position, camera.at, camera.up) * view;
+	projection = Perspective(45.0, (GLfloat)WIDTH / (GLfloat)HEIGHT, zNear, zFar);
 
 	shader->setMat4("projection", projection);
 	shader->setMat4("view", view);
 	shader->setMat4("model", model);
-
-	/* Fragment Shader */
-	shader->setVec3("backgroundColor", color);
 
 	/*--- Draw and disable each vertex attribute array being enabled ---*/
 	glDrawArrays(GL_TRIANGLES, 0, num_vertices);
@@ -192,9 +189,8 @@ void drawTexture(Shader* &shader, GLuint& buffer, GLuint& program, int num_verti
 
 	/* Vertex Shader */
 	mat4 view, projection, model;
-	//view = camera.GetViewMatrix();
-	view = LookAt(camera.position, camera.front, camera.up) * view;
-	projection = Perspective(fovy, (GLfloat)WIDTH / (GLfloat)HEIGHT, zNear, zFar);
+	view = LookAt(camera.position, camera.at, camera.up) * view;
+	projection = Perspective(45.0, (GLfloat)WIDTH / (GLfloat)HEIGHT, zNear, zFar);
 
 	shader->setMat4("projection", projection);
 	shader->setMat4("view", view);
@@ -232,7 +228,7 @@ void drawTexture(Shader* &shader, GLuint& buffer, GLuint& program, int num_verti
 
 void drawSkyBox(Shader* &shader, GLuint& buffer, GLuint& program, int numVertices)
 {
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glBindBuffer(GL_ARRAY_BUFFER, buffer);
 
 	/* Get and set: Vertex shader 'in' variables */
@@ -246,12 +242,11 @@ void drawSkyBox(Shader* &shader, GLuint& buffer, GLuint& program, int numVertice
 	/* Vertex Shader */
 	mat4 view, projection;
 	view = mat4WithUpperLeftMat3(upperLeftMat3(camera.GetViewMatrix()));		//  LookAt(camera.position, camera.position + camera.front,camera.up);	
-	projection = Perspective(fovy, (GLfloat)WIDTH / (GLfloat)HEIGHT, zNear, zFar);
+	projection = Perspective(45.0, (GLfloat)WIDTH / (GLfloat)HEIGHT, zNear, zFar);
 
 	shader->setMat4("projection", projection);
 	shader->setMat4("view", view);
 
-	//glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapTexture);
 	glDrawArrays(GL_TRIANGLES, 0, numVertices);
 	glDepthFunc(GL_LESS);									// set depth function back to default
@@ -267,27 +262,28 @@ void cubeEnvironm(Shader* &shader, GLuint& buffer, GLuint& program, int numVerti
 	glEnableVertexAttribArray(vPosition);
 	glVertexAttribPointer(vPosition, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
 
-	GLuint aNormal = glGetAttribLocation(program, "aNormal");
-	glEnableVertexAttribArray(aNormal);
-	glVertexAttribPointer(aNormal, 2, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(cubeVertices)));
+	GLuint vNormal = glGetAttribLocation(program, "vNormal");
+	glEnableVertexAttribArray(vNormal);
+	glVertexAttribPointer(vNormal, 2, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(cubeVertices)));
 	shader->use();
-
 
 	/* Vertex Shader */
 	mat4 view, projection, model;
-	//view = camera.GetViewMatrix();
-	view = LookAt(camera.position, camera.front, camera.up) * view;
-	view= Scale(0.2, 0.2, 0.2) * Translate(0.5, 1.5, -0.5) * view;
-	projection = Perspective(fovy, (GLfloat)WIDTH / (GLfloat)HEIGHT, zNear, zFar);
+	view = LookAt(vec4(0.0, 15.8, 6.0, 1.0), vec4(0.0, 0.8, 6.0, 1.0), camera.up);
+	view = Scale(0.8, 0.8, 0.8) * Translate(0.0, -1.2, -4.0);
+	projection = Perspective(45.0, (GLfloat)WIDTH / (GLfloat)HEIGHT, zNear, zFar);
 
 	shader->setMat4("projection", projection);
 	shader->setMat4("view", view);
 	shader->setMat4("model", model);
 
+	/* Fragment Shader */
+	shader->setVec3("cameraPos", camera.position_3());
+
 	/*--- Draw and disable each vertex attribute array being enabled ---*/
 	glDrawArrays(GL_TRIANGLES, 0, numVertices);
 	glDisableVertexAttribArray(vPosition);
-	glDisableVertexAttribArray(aNormal);
+	glDisableVertexAttribArray(vNormal);
 }
 
 void display() {
@@ -295,19 +291,18 @@ void display() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	drawSkyBox(skyboxShader, skyboxBuffer, skyboxProgram, numVertSkyBox);
 
-	drawTexture(textureShader, bufferMap0, textureProgram, b / 2);
-	drawTexture(textureShader, bufferMap1, textureProgram, b / 2);
-	drawTexture(textureShader, bufferMap2, textureProgram, b / 2);
-	drawTexture(textureShader, bufferMap3, textureProgram, b / 2);
-	drawTexture(textureShader, bufferMap4, textureProgram, b / 2);
-	drawTexture(textureShader, bufferMap5, textureProgram, b / 2);
-	drawTexture(textureShader, bufferMap6, textureProgram, b / 2);
-	drawTexture(textureShader, bufferMap7, textureProgram, b / 2);
+	if (flagTypeView == 0) {
+		drawTexture(textureShader, bufferMap0, textureProgram, b / 2);
+		drawTexture(textureShader, bufferMap1, textureProgram, b / 2);
+		drawTexture(textureShader, bufferMap2, textureProgram, b / 2);
+		drawTexture(textureShader, bufferMap3, textureProgram, b / 2);
+		drawTexture(textureShader, bufferMap4, textureProgram, b / 2);
+		drawTexture(textureShader, bufferMap5, textureProgram, b / 2);
+		drawTexture(textureShader, bufferMap6, textureProgram, b / 2);
+		drawTexture(textureShader, bufferMap7, textureProgram, b / 2);
+	}
+	else cubeEnvironm(cubeShader, cubeBuffer, cubeProgram, numVertCube);
 
-	cubeEnvironm(cubeShader, cubeBuffer, cubeProgram, numVertCube);
-
-	//drawBackgrounds(clipmapShader, bufferMap7, clipmapProgram, a, skyBlue3);
-	//drawBackgrounds(clipmapShader, bufferMap7, clipmapProgram, a, grayDarkColor3, true);
 	glutSwapBuffers();
 }
 
@@ -329,14 +324,7 @@ void keyboard(unsigned char key, int x, int y) {
 			camera.displacementNegX();
 			break;
 		}
-		case 'Y': {
-			camera.displacementPosY();
-			break;
-		}
-		case 'y': {
-			camera.displacementNegY();
-			break;
-		}
+
 		case 'Z': {
 			camera.displacementPosZ();
 			break;
@@ -345,6 +333,12 @@ void keyboard(unsigned char key, int x, int y) {
 			camera.displacementNegZ(); 
 			break;
 		}
+		case 'T':
+			flagTypeView = 1;
+			break;
+		case 't':
+			flagTypeView = 0;
+			break;
 	}
 
 	glutPostRedisplay();

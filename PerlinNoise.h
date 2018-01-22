@@ -100,7 +100,7 @@ struct PerlinNoise {
 		float yb = xc + wy*(xd - xc);
 		float value = ya + wz*(yb - ya);
 
-		return value * 1.2;
+		return value * 1.4;
 
 		//if (value >= 0) return value;
 		//else return value * - 1.2;

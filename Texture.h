@@ -45,7 +45,7 @@ void loadTexture(int number, GLuint* textures, const string& file)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (int)image.width_, (int)image.height_, 0, GL_RGB, GL_UNSIGNED_BYTE, image_arr);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (int)image.width_, (int)image.height_, 0, GL_BGR, GL_UNSIGNED_BYTE, image_arr);
 		glGenerateMipmap(GL_TEXTURE_2D);
 	}
 	else cout << "Texture failed to load at path: " << endl;
