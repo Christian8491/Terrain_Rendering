@@ -358,7 +358,33 @@ struct Clipmap {
 		else generateSidesTriangulation();
 	}
 
+
 };
+
+
+/* function to generate coordinates to triangulate
+ofstream outputFile("clipmap_data/triangulization_0.txt", ofstream::out);
+
+double x = -0.8;
+double constant = 0.8;
+double y = 0.8;
+double offset = 0.05;
+int cont = 0;
+
+for (int i = 0; i < 33; i++) {
+for (int j = 0; j < 33; j++) {
+outputFile << x;
+outputFile << " 0.0 ";
+outputFile << y;
+outputFile << "\n";
+x += offset;
+}
+x = -0.8;
+constant -= offset;
+y = constant;
+}
+outputFile.close();
+*/
 
 
 #endif

@@ -346,29 +346,7 @@ void keyboard(unsigned char key, int x, int y) {
 
 
 int main(int argc, char **argv) {
-	/* function to generate coordinates to triangulate 
-	ofstream outputFile("clipmap_data/triangulization_0.txt", ofstream::out);
 
-	double x = -0.8;
-	double constant = 0.8;
-	double y = 0.8;
-	double offset = 0.05;
-	int cont = 0;
-
-	for (int i = 0; i < 33; i++) {
-		for (int j = 0; j < 33; j++) {
-			outputFile << x;
-			outputFile << " 0.0 ";
-			outputFile << y;
-			outputFile << "\n";
-			x += offset;
-		}
-		x = -0.8;
-		constant -= offset;
-		y = constant;
-	}
-	outputFile.close();
-	*/
 	/* Init glut and check if glew works */
 	my_glut_init(argc, argv, WIDTH, HEIGHT);
 
@@ -377,7 +355,6 @@ int main(int argc, char **argv) {
 	glutDisplayFunc(display);
 	glutIdleFunc(idle);
 	glutKeyboardFunc(keyboard);
-				//glutMouseFunc(mouse);
 	glutMainLoop();
 	
 	return 0;
